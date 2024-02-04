@@ -24,11 +24,7 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 DEBUG = os.environ["DEBUG"]
 
 
-ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
-    "912d-154-118-65-221.ngrok-free.app",
-]
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS').split(' ')
 
 
 # Application definition
