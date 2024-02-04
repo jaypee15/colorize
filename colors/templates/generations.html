@@ -1,0 +1,208 @@
+<head>
+    <meta charset="utf-8" content="width=device-width, initial-scale=1" name="viewport"/>
+    <title>Your generations</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            width: 80%;
+            margin: auto;
+            overflow: hidden;
+        }
+
+        .header {
+            padding: 20px 0;
+            text-align: center;
+        }
+
+        .image-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+            gap: 10px;
+        }
+
+        .image-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .image {
+            cursor: pointer;
+            width: 100%;
+            max-width: 250px;
+            max-height: 250px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin: 10px 0;
+        }
+
+        .form {
+            margin: auto;
+            width: 50%;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-radius: 10px;
+        }
+        .form-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type='url'], button {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            background: #333;
+            color: #fff;
+            border: 0;
+            padding: 10px 15px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Your Generations</h1>
+    </div>
+
+    <form @submit.prevent="submit" class="form" data-component-name="PageForm" id="page-form-b430f14e-879f-423b-80cc-59d9f7035685"
+          x-cloak="" x-data="{ status: 'normal', errors: {}, image_url: 'https://static.demilked.com/wp-content/uploads/2016/07/unseen-rare-historical-photos-12.jpg'}">
+        <div class="form-header">
+            Image to Colorise 🎨
+        </div>
+        <div data-component-name="PageFormState" id="page-form-state-605eeca3-f9ac-48f5-98f2-59fe7d7ce06f" x-show="status === 'normal'">
+
+            <div class="image-container" target="_blank">
+                <a href="{{ generation.before_url }}" target="_blank">
+                <img x-show="image_url" class="image" :src="image_url"  alt="">
+                    </a>
+            </div>
+            <input data-component-name="PageFormInput" id="page-form-input-78e2b175-a83c-49a4-b4b1-3ee9ed192de0"
+                   name="image_url" x-model="image_url" type="url"/>
+            <button data-component-name="PageFormSubmitButton" id="page-form-submit-button-cf673914-855b-43c1-a53e-f1c06434e2fa">
+                Submit
+            </button>
+        </div>
+
+        <div data-component-name="PageFormState" id="page-form-state-2cf868eb-2da0-4ca5-be65-9f13ca2be920" x-show="status === 'success'">
+            <div data-component-name="PageText" id="page-text-fe45a37e-86c4-4786-adda-58cd50abd461">
+                Successfully submitted form ✅
+            </div>
+        </div>
+        <div data-component-name="PageFormState" id="page-form-state-a8b68f4b-8ae3-49db-a235-2db5a3f65bd7" x-show="status === 'error'">
+            <div data-component-name="PageText" id="page-text-cadbfdfd-c1c9-496f-8b70-3f496108a95b">
+                Error submitting your form ❌
+            </div>
+        </div>
+
+        <script>
+            function submit(event) {
+                /*
+                Submit the form to the server to start the generation.
+                 */
+                event.preventDefault();
+                const formData = new FormData(event.target);
+                const object = Object.fromEntries(formData);
+                const payload = JSON.stringify(object);
+
+                fetch("/start-generation", {
+                    method: "post",
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                    },
+                })
+                    .then(response => {
+                        this.status = response.ok ? 'success' : 'error';
+                        return response.json();
+                    })
+                    .then(data => {
+                        this.errors = data.errors || {};
+                        if (data.generation_id) {
+                            this.generationId = data.generation_id;
+                            poll(this.generationId);
+                        }
+                        else{
+                            this.status = 'error';
+                        }
+                    });
+            }
+
+            function poll(generationId) {
+                /*
+                Poll the server to check if the generation is complete.
+                 */
+                let attempts = 30;
+                const intervalId = setInterval(() => {
+                    if (attempts <= 0) {
+                        clearInterval(intervalId);
+                        this.status = 'error';
+                        return;
+                    }
+                    fetch(`/check-generation/${generationId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'completed') {
+                                window.location.reload();
+                            }
+                        });
+                    attempts--;
+                }, 1000);
+            }
+        </script>
+        <script defer="" src="https://cdn.jsdelivr.net/npm/alpinejs@3.12.3/dist/cdn.min.js">
+        </script>
+    </form>
+
+
+    {% for generation in generations %}
+    <div class="image-row">
+        <div class="image-container" >
+            <div>Before</div>
+            <a href="{{ generation.before_url }}" target="_blank">
+                <img class="image" src="{{ generation.before_url }}">
+            </a>
+        </div>
+        <div class="image-container" href="{{ generation.after_url }}" target="_blank">
+            <div>After</div>
+            <a href="{{ generation.after_url }}" target="_blank">
+                <img class="image" src="{{ generation.after_url }}">
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+    {% if generations|length == 0 %}
+    <div>
+        <span>You have no generations yet.</span>
+    </div>
+    {% endif %}
+</div>
+</body>
+
