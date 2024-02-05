@@ -26,7 +26,7 @@ def start_generation(request) -> JsonResponse:
     """
     image_url = request.POST['image_url']
 
-    secret_id = uuid.uuid4()  # We'll use this to prevent people from sending us fake webhooks.
+    secret_id = uuid.uuid4()  
     generation = Generation.objects.create(secret_key=secret_id, before_url=image_url, status="started")
 
     uri = reverse('complete-generation', kwargs={'secret_key': secret_id})
