@@ -9,4 +9,7 @@ class Generation(models.Model):
     status = models.CharField(max_length=20, default="created")
 
     def __str__(self):
+        """
+        Return a formatted string representing the generation ID and status.
+        """
         return f"Generation {self.id} | {self.status}"
